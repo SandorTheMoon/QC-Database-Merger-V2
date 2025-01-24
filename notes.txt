@@ -1,0 +1,19 @@
+1. Create requirements.txt to list all required packages/libraries to be installed.
+2. Create a .BAT file. Executes the program in one click.
+   - Create a separate script for installing Python first. 
+   - Check if all required packages are installed.
+   - Check if MergedFiles2 folder does not exist, create one.
+   - Display the progress of every step in the .BAT file (if possible).
+        Example:
+           "Installing Packages..."
+           "Finished installing packages"
+           "Running the program..."
+           "Finished running the program"
+           "Program has stopped/closed"
+
+
+3. Create a venv (Virtual Environment) to put installed packages.
+   - To prevent the program from installing the packages/libraries directly to their computer.
+
+4. Added exit() after executing the program to prevent re-running errors.
+5. Try Except errors to processes in order to prevent.
