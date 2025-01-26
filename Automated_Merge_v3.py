@@ -1,5 +1,7 @@
-# File Merger for QC SHRU L&D Database, Created by Ian Salig U Batangan, contact details:isubatangan@gmail.com
+# File Merger for QC SHRU L&D Database
 # Purpose: to automatically merge all the training data available
+# Created by: Ian Salig U Batangan, Contact Details: isubatangan@gmail.com
+# Versions Updates by: Airysh Xander M. Espero, Contact Details: derespero@gmail.com
 
 import os 
 import venv # For activating virtual environment
