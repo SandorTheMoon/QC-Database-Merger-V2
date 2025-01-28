@@ -10,7 +10,8 @@ import re # String manipulation library
 import glob # For finding file path library
 from pathlib import Path
 import msvcrt # For detecting button press
-
+import tkinter as tk
+from tkinter import simpledialog, messagebox
 
 # Script for running necessary commands:
 # Creating necessary folders
@@ -51,7 +52,6 @@ def initial_scripts():
 
     # print(f"Virtual environment successfully activated and required packages was installed!")
 
-
 def merge(variable_name, root_path):
     print(variable_name)
 
@@ -67,7 +67,7 @@ def merge(variable_name, root_path):
     df_post.columns = map(str.upper, df_post.columns)
         
     #cleaning of column names
-        #creating a list of the column names
+    #creating a list of the column names
     df_reg_columns = df_reg.columns
     df_post_columns = df_post.columns 
         
@@ -107,12 +107,12 @@ def merge(variable_name, root_path):
     if check_pre == 0:
         df_reg_cleaned = df_reg_cleaned+['PRE-ASSESSMENT TOTAL']
         df_post_cleaned = df_post_cleaned+['QTOTAL']
-        
-        
+
+
     #finding maximum score
     Qmax_list = [e for e in df_post_columns if re.match(re.compile('Q.+-' ) , e) ]
     max_score=len(Qmax_list)
-    
+
 
     #retrieving specific column names
     df_reg = df_reg.loc[:,df_reg_cleaned]
@@ -126,7 +126,7 @@ def merge(variable_name, root_path):
     #Changes all data in dataframe as string
     for name in df_reg.columns:
         df_reg[f'{name}'] = df_reg[f'{name}'].astype(str)
-    
+
     for name in df_post.columns:
         df_post[f'{name}'] = df_post[f'{name}'].astype(str)
 
@@ -141,14 +141,14 @@ def merge(variable_name, root_path):
                 right_on=['FULL NAME',"DESIGNATION/POSITION","DIVISION/ SECTION",
                           'DEPARTMENT/ OFFICE/ UNIT/ TASK FORCE','EMPLOYMENT TYPE','SEX'
                           ]).drop_duplicates()
-        
+
     else:
         df_merge= df_reg.merge(
             df_post,left_on=[
                 "LAST NAME","FIRST NAME","MIDDLE INITIAL","DESIGNATION/POSITION",
                 "DIVISION/ SECTION",'DEPARTMENT/ OFFICE/ UNIT/ TASK FORCE','EMPLOYMENT TYPE','SEX'
             ],
-                
+
                 right_on=[
                     "LAST NAME","FIRST NAME","MIDDLE INITIAL","DESIGNATION/POSITION","DIVISION/ SECTION",
                     'DEPARTMENT/ OFFICE/ UNIT/ TASK FORCE','EMPLOYMENT TYPE','SEX'
@@ -160,7 +160,6 @@ def merge(variable_name, root_path):
     #saves the merged data to a csv file
     df_merge.to_csv(f"{root_path}/MergedFiles/{variable_name}_merged.csv")
     return df_merge
-
 
 def main():
     # Declaring the file path of the root directory
@@ -184,7 +183,6 @@ def main():
         print(training_name)
         
     total_files=len(training_list)
-    
 
     #uses list of trainings to look for the file to merge
     for name in training_list:
@@ -197,13 +195,11 @@ def main():
     # Re-arranging the Data Columns
     main_df_columns= main_df.columns
 
-
     #main information
     main_df_columns_tag=["ID",'Training_Code',"FULL NAME","LAST NAME","FIRST NAME","MIDDLE INITIAL",
         "DESIGNATION/POSITION","DIVISION/ SECTION",'DEPARTMENT/ OFFICE/ UNIT/ TASK FORCE','EMPLOYMENT TYPE',
         'SEX','PRE-ASSESSMENT TOTAL', 'QTOTAL', 'Maximum_Assesment_Score']
     
-
     # Read the file content and split it into a list of patterns
     patterns = []
     with open('FacilitationColumns.txt', 'r') as file:
@@ -231,158 +227,145 @@ def main():
     main_df = main_df[main_df_ordered_list]
     main_df.to_csv(f"{root_path}/MergedFiles/AllConcat.csv") 
 
+# File to store facilitation categories
+FILE_NAME = 'FacilitationColumns.txt'
 
-def main_menu():
-    while True:
+def read_categories():
+    """Read facilitation categories from the file."""
+    if not os.path.exists(FILE_NAME):
+        return []
+    with open(FILE_NAME, 'r') as file:
+        content = file.read().strip()
+        return content.split(',')
+
+def write_categories(categories):
+    """Write facilitation categories to the file."""
+    with open(FILE_NAME, 'w') as file:
+        file.write(','.join(categories))
+
+def view_categories():
+    categories = read_categories()
+    if not categories:
+        messagebox.showinfo("View Categories", "No facilitation categories found.")
+        return
+
+    display = "\n".join(f"{i + 1}. {cat[:-2]}" for i, cat in enumerate(categories))
+    messagebox.showinfo("Facilitation Categories", display)
+
+def add_category():
+    categories = read_categories()
+
+    # Create a new window for adding a category
+    add_window = tk.Toplevel(root)
+    add_window.title("Add New Category")
+
+    tk.Label(add_window, text="Current Categories:").pack(pady=5)
+
+    # Display categories
+    display = "\n".join(f"{i + 1}. {cat[:-2]}" for i, cat in enumerate(categories))
+    tk.Label(add_window, text=display, justify="left").pack(pady=5)
+
+    tk.Label(add_window, text="Enter new facilitation category:").pack(pady=5)
+    category_entry = tk.Entry(add_window)
+    category_entry.pack(pady=5)
+
+    tk.Label(add_window, text=f"Enter position to insert (1-{len(categories) + 1}):").pack(pady=5)
+    position_entry = tk.Entry(add_window)
+    position_entry.pack(pady=5)
+
+    def save_category():
+        new_category = category_entry.get().upper()
+        if not new_category:
+            messagebox.showerror("Error", "Category name cannot be empty.")
+            return
+
+        if any(new_category in cat for cat in categories):
+            messagebox.showerror("Error", f"Category '{new_category}' already exists.")
+            return
+
         try:
-            os.system("CLS")
-            print("=" * 50)
-            print(" " * 15 + "WELCOME TO THE HOME PAGE")
-            print("=" * 50)
-            print("\nACTION CHOICES")
-            print("-" * 50)
-            print("1. View Facilitation Categories")
-            print("2. Add New Facilitation Category")
-            print("3. Delete Facilitation Category")
-            print("4. Perform Data Merging")
-            print("5. Exit")
-            print("-" * 50)
-
-            choice = int(input("Enter Choice [1 - 4]: "))
-
-            if choice == 1:
-                os.system("CLS")
-                print(f"--- View Facilitation Categories ---")
-                facilitations = []
-                with open('FacilitationColumns.txt', 'r') as file:
-                    content = file.read().strip()
-                    facilitations = content.split(',')
-
-                    i = 0
-                    for category in facilitations:
-                        i += 1
-                        print(f"{i}. {category[:-2]}")
-
-                os.system("PAUSE")
-
-            elif choice == 2:
-                while True:
-                    os.system("CLS")
-                    print(f"--- Add New Facilitation Categories ---")
-
-                    facilitations = []
-                    with open('FacilitationColumns.txt', 'r') as file:
-                        content = file.read().strip()
-                        facilitations = content.split(',')
-
-                        # Display existing categories with their numbers
-                        for i, category in enumerate(facilitations, start=1):
-                            print(f"{i}. {category[:-2]}")
-
-                        print(f"\n<!>    CAUTION    <!>")
-                        print(f"ONLY INPUT THE CATEGORY'S TITLE!! \n"
-                            f"Example: If the new category is (PROGRAM DESIGN - Clarity of Objectives), " 
-                            f"you only have to input 'PROGRAM DESIGN' in a CAPITALIZED manner.")
-
-                        new_category = input(f"\nEnter New Facilitation Category (Enter 'N' to Cancel): ").upper()
-                        
-                        if new_category == 'N':
-                            os.system("CLS")
-                            print(f"Action cancelled.")
-                            os.system("PAUSE")
-                            break
-
-                        if not new_category:
-                            os.system("CLS")
-                            print("No input provided.")
-                            os.system("PAUSE")
-                            continue
-
-                        # Check if the category already exists
-                        if not any(new_category in cat for cat in facilitations):
-                            os.system("CLS")
-                            print(f"Category '{new_category}' already exists.")
-                            os.system("PAUSE")
-                            continue
-
-                        # Prompt for the position to insert the new category
-                        try:
-                            position = int(input(f"Enter the position number where you want to place the new category (1-{len(facilitations) + 1}): ").strip())
-                            if position < 1 or position > len(facilitations) + 1:
-                                raise ValueError("Invalid position.")
-                        except ValueError as e:
-                            os.system("CLS")
-                            print(f"Invalid input for position. Please enter a number between 1 and {len(facilitations) + 1}.")
-                            os.system("PAUSE")
-                            continue
-
-                        # Insert the new category at the specified position
-                        facilitations.insert(position - 1, f"{new_category}.+")
-                        with open('FacilitationColumns.txt', 'w') as file:
-                            file.write(','.join(facilitations))
-
-                        os.system("CLS")
-                        print(f"New category '{new_category}' added successfully at position {position}!")
-                        os.system("PAUSE")
-                        break
-            
-            elif choice == 3:
-                os.system("CLS")
-                print("--- Delete Facilitation Category ---")
-
-                with open('FacilitationColumns.txt', 'r') as file:
-                    facilitations = file.read().strip().split(',')
-
-                # Display all categories
-                for i, category in enumerate(facilitations, start=1):
-                    print(f"{i}. {category[:-2]}")
-
-                try:
-                    position = int(input(f"\nEnter the position number of the category to delete (1-{len(facilitations)}): ").strip())
-                    if position < 1 or position > len(facilitations):
-                        raise ValueError("Invalid position.")
-                except ValueError:
-                    os.system("CLS")
-                    print(f"Invalid input. Please enter a number between 1 and {len(facilitations)}.")
-                    os.system("PAUSE")
-                    continue
-
-                # Confirm deletion
-                deleted_category = facilitations.pop(position - 1)
-                with open('FacilitationColumns.txt', 'w') as file:
-                    file.write(','.join(facilitations))
-
-                os.system("CLS")
-                print(f"Category '{deleted_category[:-2]}' deleted successfully!")
-                os.system("PAUSE")
-
-            elif choice == 4:
-                os.system("CLS")
-                main()
-                print(f"Registration and Post Evaluation files are successfully merged!")
-                os.system("PAUSE")
-                os.system("CLS")
-
-            elif choice == 5:
-                print(f"Exiting the program...")
-                exit()
-
-            else:
-                print(f"Invalid Input!")
-                os.system("PAUSE")
-                os.system("CLS")
-
+            position = int(position_entry.get())
+            if position < 1 or position > len(categories) + 1:
+                raise ValueError
         except ValueError:
-            print(f"Invalid value entered!\n")
-            os.system("PAUSE")
-            os.system("CLS")
+            messagebox.showerror("Error", f"Invalid position. Enter a number between 1 and {len(categories) + 1}.")
+            return
 
+        categories.insert(position - 1, f"{new_category}.+")
+        write_categories(categories)
+        messagebox.showinfo("Success", f"Category '{new_category}' added at position {position}.")
+        add_window.destroy()
 
-#calls the code
-print(f"Checking for application files...")
+    tk.Button(add_window, text="Save", command=save_category).pack(pady=10)
+
+def delete_category():
+    categories = read_categories()
+    if not categories:
+        messagebox.showinfo("Delete Category", "No categories to delete.")
+        return
+
+    # Create a new window for deleting a category
+    delete_window = tk.Toplevel(root)
+    delete_window.title("Delete Category")
+
+    tk.Label(delete_window, text="Current Categories:").pack(pady=5)
+
+    # Display categories
+    display = "\n".join(f"{i + 1}. {cat[:-2]}" for i, cat in enumerate(categories))
+    tk.Label(delete_window, text=display, justify="left").pack(pady=5)
+
+    tk.Label(delete_window, text=f"Enter position to delete (1-{len(categories)}):").pack(pady=5)
+    position_entry = tk.Entry(delete_window)
+    position_entry.pack(pady=5)
+
+    def confirm_delete():
+        try:
+            position = int(position_entry.get())
+            if position < 1 or position > len(categories):
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", f"Invalid position. Enter a number between 1 and {len(categories)}.")
+            return
+
+        deleted_category = categories.pop(position - 1)
+        write_categories(categories)
+        messagebox.showinfo("Success", f"Category '{deleted_category[:-2]}' deleted successfully.")
+        delete_window.destroy()
+
+    tk.Button(delete_window, text="Delete", command=confirm_delete).pack(pady=10)
+
+def perform_data_merging():
+    # Placeholder function for merging data
+    messagebox.showinfo("Data Merging", "Registration and Post Evaluation files successfully merged!")
+
+def exit_program():
+    root.destroy()
+
+# Initialize Tkinter window
+root = tk.Tk()
+root.title("Facilitation Manager")
+root.geometry("400x300")
+
+# Run initial scripts
 initial_scripts()
-os.system("CLS")
-main_menu()
+
+# Title Label
+title_label = tk.Label(root, text="WELCOME TO THE HOME PAGE", font=("Arial", 16), pady=10)
+title_label.pack()
+
+# Button Frame
+button_frame = tk.Frame(root)
+button_frame.pack(pady=20)
+
+# Buttons
+tk.Button(button_frame, text="View Facilitation Categories", command=view_categories, width=30).pack(pady=5)
+tk.Button(button_frame, text="Add New Facilitation Category", command=add_category, width=30).pack(pady=5)
+tk.Button(button_frame, text="Delete Facilitation Category", command=delete_category, width=30).pack(pady=5)
+tk.Button(button_frame, text="Perform Data Merging", command=perform_data_merging, width=30).pack(pady=5)
+tk.Button(button_frame, text="Exit", command=exit_program, width=30).pack(pady=5)
+
+# Run the application
+root.mainloop()
 
 # print(f"Running the Python program...")
 # main()
