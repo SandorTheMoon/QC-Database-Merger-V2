@@ -11,7 +11,8 @@ import glob # For finding file path library
 from pathlib import Path
 import msvcrt # For detecting button press
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import simpledialog, messagebox, filedialog
+
 
 # Script for running necessary commands:
 # Creating necessary folders
@@ -53,8 +54,6 @@ def initial_scripts():
     # print(f"Virtual environment successfully activated and required packages was installed!")
 
 def merge(variable_name, root_path):
-    print(variable_name)
-
     #determining path
     path_reg = root_path/"ToMergeFiles"/f"{variable_name}_Reg.xlsx/"
     path_post = root_path/"ToMergeFiles"/f"{variable_name}_Post.csv/"
@@ -166,8 +165,15 @@ def main():
     root_path=Path.cwd()
     print(f'File path is {root_path}')
 
-    # Define the folder and pattern to search for files
+    # Define the folder to search for files
     to_merge_path = root_path / "ToMergeFiles"
+
+    # Check if the directory is empty
+    if not any(to_merge_path.iterdir()):
+        messagebox.showerror("Error", "No files found in the ToMergeFiles folder!")
+        return
+    
+    # Define pattern to search for files
     file_pattern = "*_Post.csv"
 
     # Checks current folder for all the trainings with post assesment and makes a list of the unique trainings
@@ -226,6 +232,7 @@ def main():
     # ISUB
     main_df = main_df[main_df_ordered_list]
     main_df.to_csv(f"{root_path}/MergedFiles/AllConcat.csv") 
+    messagebox.showinfo("Data Merging", "Registration and Post Evaluation files successfully merged!")
 
 # File to store facilitation categories
 FILE_NAME = 'FacilitationColumns.txt'
@@ -244,20 +251,56 @@ def write_categories(categories):
         file.write(','.join(categories))
 
 def view_categories():
+    global view_window
+
+    try:
+        if view_window.winfo_exists():
+            view_window.destroy()
+
+    except NameError:
+        pass  # If add_window is not defined yet, skip this step
+
     categories = read_categories()
+
+    view_window = tk.Toplevel(root)
+    view_window.title("View Category")
+    
+    view_window.attributes('-fullscreen', True) # Full Screen Size
+
+    tk.Label(view_window, text="List of Categories:").pack(pady=5)
+
     if not categories:
         messagebox.showinfo("View Categories", "No facilitation categories found.")
         return
 
     display = "\n".join(f"{i + 1}. {cat[:-2]}" for i, cat in enumerate(categories))
-    messagebox.showinfo("Facilitation Categories", display)
+    tk.Label(view_window, text=display, justify="left").pack(pady=5)
+
+    # Back button
+    def go_back():
+        view_window.destroy()
+
+    tk.Button(view_window, text="Back", command=go_back).pack(pady=10)
 
 def add_category():
+    # Ensure there's only one add_window
+    global add_window
+
+    try:
+        if add_window.winfo_exists():
+            add_window.destroy()
+
+    except NameError:
+        pass  # If add_window is not defined yet, skip this step
+
+
     categories = read_categories()
 
     # Create a new window for adding a category
     add_window = tk.Toplevel(root)
     add_window.title("Add New Category")
+
+    add_window.attributes('-fullscreen', True) # Full Screen Size
 
     tk.Label(add_window, text="Current Categories:").pack(pady=5)
 
@@ -277,10 +320,14 @@ def add_category():
         new_category = category_entry.get().upper()
         if not new_category:
             messagebox.showerror("Error", "Category name cannot be empty.")
+            add_window.destroy()
+            add_category()
             return
 
         if any(new_category in cat for cat in categories):
             messagebox.showerror("Error", f"Category '{new_category}' already exists.")
+            add_window.destroy()
+            add_category()
             return
 
         try:
@@ -288,7 +335,9 @@ def add_category():
             if position < 1 or position > len(categories) + 1:
                 raise ValueError
         except ValueError:
-            messagebox.showerror("Error", f"Invalid position. Enter a number between 1 and {len(categories) + 1}.")
+            messagebox.showerror("Error", f"Invalid position. Enter a number between 0 and {len(categories) + 2}.")
+            add_window.destroy()
+            add_category()
             return
 
         categories.insert(position - 1, f"{new_category}.+")
@@ -298,7 +347,23 @@ def add_category():
 
     tk.Button(add_window, text="Save", command=save_category).pack(pady=10)
 
+    # Back button
+    def go_back():
+        add_window.destroy()
+
+    tk.Button(add_window, text="Back", command=go_back).pack(pady=10)
+
 def delete_category():
+    # Ensure there's only one delete_window
+    global delete_window
+
+    try:
+        if delete_window.winfo_exists():
+            delete_window.destroy()
+            
+    except NameError:
+        pass  # If delete_window is not defined yet, skip this step
+
     categories = read_categories()
     if not categories:
         messagebox.showinfo("Delete Category", "No categories to delete.")
@@ -307,6 +372,8 @@ def delete_category():
     # Create a new window for deleting a category
     delete_window = tk.Toplevel(root)
     delete_window.title("Delete Category")
+    
+    delete_window.attributes('-fullscreen', True)
 
     tk.Label(delete_window, text="Current Categories:").pack(pady=5)
 
@@ -321,22 +388,106 @@ def delete_category():
     def confirm_delete():
         try:
             position = int(position_entry.get())
-            if position < 1 or position > len(categories):
+            if position < 1 or position > (len(categories) + 1):
                 raise ValueError
+            
+            else:
+                deleted_category = categories.pop(position - 1)
+                write_categories(categories)
+                messagebox.showinfo("Success", f"Category '{deleted_category[:-2]}' deleted successfully.")
+
         except ValueError:
-            messagebox.showerror("Error", f"Invalid position. Enter a number between 1 and {len(categories)}.")
+            messagebox.showerror("Error", f"Invalid position. Enter a number from to {len(categories)}.")
+            delete_window.destroy()
+            delete_category()
             return
 
-        deleted_category = categories.pop(position - 1)
-        write_categories(categories)
-        messagebox.showinfo("Success", f"Category '{deleted_category[:-2]}' deleted successfully.")
         delete_window.destroy()
 
     tk.Button(delete_window, text="Delete", command=confirm_delete).pack(pady=10)
 
-def perform_data_merging():
-    # Placeholder function for merging data
-    messagebox.showinfo("Data Merging", "Registration and Post Evaluation files successfully merged!")
+    # Back button
+    def go_back():
+        delete_window.destroy()
+
+    tk.Button(delete_window, text="Back", command=go_back).pack(pady=10)
+
+
+def getLocalFile():
+    # root = tk.Tk()
+    # root.withdraw()  # Hide the root window
+
+    # Allow multiple file selection
+    filePaths = filedialog.askopenfilenames(title="Select Files to Merge")
+
+    if not filePaths:
+        messagebox.showinfo("No Files Selected", "No files were selected.")
+        return
+
+    # Define the destination folder
+    root_path = Path.cwd()
+    to_merge_path = root_path / "ToMergeFiles"
+
+    # Ensure the folder exists
+    to_merge_path.mkdir(exist_ok=True)
+
+    # Move selected files to ToMergeFiles
+    for file in filePaths:
+        file_path = Path(file)
+        destination = to_merge_path / file_path.name  # Preserve the original file name
+
+        try:
+            destination.write_bytes(file_path.read_bytes())  # Copy & paste the file
+            print(f"Moved: {file_path.name} -> {destination}")
+        except Exception as e:
+            print(f"Error moving {file_path.name}: {e}")
+
+    messagebox.showinfo("Success", "Selected files have been moved to ToMergeFiles!")
+
+
+def viewToMergeFiles():
+    """Display a window showing the list of files in the ToMergeFiles folder."""
+    global view_merge_window
+
+    # Ensure there's only one window open at a time
+    try:
+        if view_merge_window.winfo_exists():
+            view_merge_window.destroy()
+    except NameError:
+        pass  # If the window is not defined yet, skip this step
+
+    # Define the folder path
+    root_path = Path.cwd()
+    to_merge_path = root_path / "ToMergeFiles"
+
+    # Ensure the folder exists
+    to_merge_path.mkdir(exist_ok=True)
+
+    # Get the list of files in ToMergeFiles
+    files = list(to_merge_path.iterdir())
+
+    # Create the new window
+    view_merge_window = tk.Toplevel()
+    view_merge_window.title("Files in ToMergeFiles")
+    view_merge_window.attributes('-fullscreen', True)  # Full Screen
+
+    # Display the title
+    tk.Label(view_merge_window, text="Files in ToMergeFiles", font=("Arial", 16)).pack(pady=10)
+
+    # If no files are present, show a message
+    if not files:
+        tk.Label(view_merge_window, text="No files found in ToMergeFiles.", font=("Arial", 12)).pack(pady=5)
+    else:
+        # Display file names
+        file_list = "\n".join(file.name for file in files)
+        tk.Label(view_merge_window, text=file_list, font=("Arial", 12), justify="left").pack(pady=5)
+
+    # Back button
+    def go_back():
+        view_merge_window.destroy()
+
+    tk.Button(view_merge_window, text="Back", command=go_back).pack(pady=10)
+
 
 def exit_program():
     root.destroy()
@@ -344,7 +495,8 @@ def exit_program():
 # Initialize Tkinter window
 root = tk.Tk()
 root.title("Facilitation Manager")
-root.geometry("400x300")
+# root.geometry("400x300")
+root.attributes('-fullscreen', True) # Full Screen Size
 
 # Run initial scripts
 initial_scripts()
@@ -361,7 +513,9 @@ button_frame.pack(pady=20)
 tk.Button(button_frame, text="View Facilitation Categories", command=view_categories, width=30).pack(pady=5)
 tk.Button(button_frame, text="Add New Facilitation Category", command=add_category, width=30).pack(pady=5)
 tk.Button(button_frame, text="Delete Facilitation Category", command=delete_category, width=30).pack(pady=5)
-tk.Button(button_frame, text="Perform Data Merging", command=perform_data_merging, width=30).pack(pady=5)
+tk.Button(button_frame, text="Perform Data Merging", command=main, width=30).pack(pady=5)
+tk.Button(button_frame, text="Upload To Merge File/s", command=getLocalFile, width=30).pack(pady=5)
+tk.Button(button_frame, text="View To Merge File/s", command=viewToMergeFiles, width=30).pack(pady=5)
 tk.Button(button_frame, text="Exit", command=exit_program, width=30).pack(pady=5)
 
 # Run the application
