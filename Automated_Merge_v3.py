@@ -1,7 +1,7 @@
 # File Merger for QC SHRU L&D Database
 # Purpose: to automatically merge all the training data available
 # Created by: Ian Salig U Batangan, Contact Details: isubatangan@gmail.com
-# Versions Updates by: Airysh Xander M. Espero, Contact Details: derespero@gmail.com
+# Version Updates by: Airysh Xander M. Espero, Contact Details: derespero@gmail.com
 
 import os 
 import venv # For activating virtual environment
@@ -208,7 +208,7 @@ def main():
     
     # Read the file content and split it into a list of patterns
     patterns = []
-    with open('FacilitationColumns.txt', 'r') as file:
+    with open(FILE_NAME, 'r') as file:
         content = file.read().strip()
         patterns = content.split(',')
 
@@ -238,7 +238,7 @@ def main():
 FILE_NAME = 'FacilitationColumns.txt'
 
 def read_categories():
-    """Read facilitation categories from the file."""
+    # Read facilitation categories from the file.
     if not os.path.exists(FILE_NAME):
         return []
     with open(FILE_NAME, 'r') as file:
@@ -246,171 +246,114 @@ def read_categories():
         return content.split(',')
 
 def write_categories(categories):
-    """Write facilitation categories to the file."""
+    # Write facilitation categories to the file.
     with open(FILE_NAME, 'w') as file:
         file.write(','.join(categories))
 
-def view_categories():
-    global view_window
+def manage_categories():
+    # A single window to view, add, and delete facilitation categories.
+    global category_window
 
+    # Ensure only one window is open at a time
     try:
-        if view_window.winfo_exists():
-            view_window.destroy()
-
+        if category_window.winfo_exists():
+            category_window.destroy()
     except NameError:
-        pass  # If add_window is not defined yet, skip this step
+        pass  
 
     categories = read_categories()
 
-    view_window = tk.Toplevel(root)
-    view_window.title("View Category")
-    
-    view_window.attributes('-fullscreen', True) # Full Screen Size
+    category_window = tk.Toplevel(root)
+    category_window.title("Manage Categories")
+    category_window.attributes('-fullscreen', True)  # Full Screen
 
-    tk.Label(view_window, text="List of Categories:").pack(pady=5)
+    tk.Label(category_window, text="Manage Facilitation Categories", font=("Arial", 16, "bold")).grid(row=0, column=0, columnspan=3, pady=10)
 
-    if not categories:
-        messagebox.showinfo("View Categories", "No facilitation categories found.")
-        return
+    # Create a frame for table structure
+    table_frame = tk.Frame(category_window)
+    table_frame.grid(row=1, column=0, columnspan=3, padx=20, pady=10)
 
-    display = "\n".join(f"{i + 1}. {cat[:-2]}" for i, cat in enumerate(categories))
-    tk.Label(view_window, text=display, justify="left").pack(pady=5)
+    # Header row
+    tk.Label(table_frame, text="No.", font=("Arial", 12, "bold"), width=5, anchor="w").grid(row=0, column=0, padx=5, pady=5)
+    tk.Label(table_frame, text="Category", font=("Arial", 12, "bold"), width=40, anchor="w").grid(row=0, column=1, padx=5, pady=5)
+    tk.Label(table_frame, text="Action", font=("Arial", 12, "bold"), width=10, anchor="w").grid(row=0, column=2, padx=5, pady=5)
 
-    # Back button
-    def go_back():
-        view_window.destroy()
+    def delete_category(index):
+        """Confirm and delete the selected category, then refresh the view."""
+        category_name = categories[index][:-2]  # Remove ".+" from category name
+        
+        confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete '{category_name}'?")
+        if confirm:  # Only proceed if user confirms deletion
+            del categories[index]  # Remove category from the list
+            write_categories(categories)  # Save updated list to the file
+        
+        category_window.destroy()  # Close the window
+        manage_categories()  # Reload the updated category list
+            
 
-    tk.Button(view_window, text="Back", command=go_back).pack(pady=10)
+    # Display each category in table format with a delete button
+    for i, cat in enumerate(categories):
+        tk.Label(table_frame, text=f"{i + 1}.", font=("Arial", 12), width=5, anchor="w").grid(row=i + 1, column=0, padx=5, pady=5)
+        tk.Label(table_frame, text=cat[:-2], font=("Arial", 12), width=40, anchor="w").grid(row=i + 1, column=1, padx=5, pady=5)
+        tk.Button(table_frame, text="Delete", command=lambda i=i: delete_category(i), bg="red", fg="white").grid(row=i + 1, column=2, padx=5, pady=5)
 
-def add_category():
-    # Ensure there's only one add_window
-    global add_window
+    # Adding new category section
+    add_frame = tk.Frame(category_window)
+    add_frame.grid(row=2, column=0, columnspan=3, pady=20)
 
-    try:
-        if add_window.winfo_exists():
-            add_window.destroy()
+    tk.Label(add_frame, text="Enter New Category Name:", font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=5)
+    category_entry = tk.Entry(add_frame, width=30)
+    category_entry.grid(row=0, column=1, padx=5, pady=5)
 
-    except NameError:
-        pass  # If add_window is not defined yet, skip this step
+    tk.Label(add_frame, text=f"Enter Position (1-{len(categories) + 1}):", font=("Arial", 12)).grid(row=1, column=0, padx=5, pady=5)
+    position_entry = tk.Entry(add_frame, width=5)
+    position_entry.grid(row=1, column=1, padx=5, pady=5)
 
-
-    categories = read_categories()
-
-    # Create a new window for adding a category
-    add_window = tk.Toplevel(root)
-    add_window.title("Add New Category")
-
-    add_window.attributes('-fullscreen', True) # Full Screen Size
-
-    tk.Label(add_window, text="Current Categories:").pack(pady=5)
-
-    # Display categories
-    display = "\n".join(f"{i + 1}. {cat[:-2]}" for i, cat in enumerate(categories))
-    tk.Label(add_window, text=display, justify="left").pack(pady=5)
-
-    tk.Label(add_window, text="Enter new facilitation category:").pack(pady=5)
-    category_entry = tk.Entry(add_window)
-    category_entry.pack(pady=5)
-
-    tk.Label(add_window, text=f"Enter position to insert (1-{len(categories) + 1}):").pack(pady=5)
-    position_entry = tk.Entry(add_window)
-    position_entry.pack(pady=5)
-
-    def save_category():
+    def add_category():
+        # Add a new category at the specified position.
         new_category = category_entry.get().upper()
+
         if not new_category:
             messagebox.showerror("Error", "Category name cannot be empty.")
-            add_window.destroy()
-            add_category()
+            category_window.destroy()  # Close the window
+            manage_categories()  # Reload the updated category list
             return
 
-        if any(new_category in cat for cat in categories):
+        existing_categories = [cat[:-2] for cat in categories]
+
+        if new_category in existing_categories:
             messagebox.showerror("Error", f"Category '{new_category}' already exists.")
-            add_window.destroy()
-            add_category()
+            category_window.destroy()  # Close the window
+            manage_categories()  # Reload the updated category list
             return
 
         try:
             position = int(position_entry.get())
+
             if position < 1 or position > len(categories) + 1:
-                raise ValueError
-        except ValueError:
-            messagebox.showerror("Error", f"Invalid position. Enter a number between 0 and {len(categories) + 2}.")
-            add_window.destroy()
-            add_category()
-            return
-
-        categories.insert(position - 1, f"{new_category}.+")
-        write_categories(categories)
-        messagebox.showinfo("Success", f"Category '{new_category}' added at position {position}.")
-        add_window.destroy()
-
-    tk.Button(add_window, text="Save", command=save_category).pack(pady=10)
-
-    # Back button
-    def go_back():
-        add_window.destroy()
-
-    tk.Button(add_window, text="Back", command=go_back).pack(pady=10)
-
-def delete_category():
-    # Ensure there's only one delete_window
-    global delete_window
-
-    try:
-        if delete_window.winfo_exists():
-            delete_window.destroy()
-            
-    except NameError:
-        pass  # If delete_window is not defined yet, skip this step
-
-    categories = read_categories()
-    if not categories:
-        messagebox.showinfo("Delete Category", "No categories to delete.")
-        return
-
-    # Create a new window for deleting a category
-    delete_window = tk.Toplevel(root)
-    delete_window.title("Delete Category")
-    
-    delete_window.attributes('-fullscreen', True)
-
-    tk.Label(delete_window, text="Current Categories:").pack(pady=5)
-
-    # Display categories
-    display = "\n".join(f"{i + 1}. {cat[:-2]}" for i, cat in enumerate(categories))
-    tk.Label(delete_window, text=display, justify="left").pack(pady=5)
-
-    tk.Label(delete_window, text=f"Enter position to delete (1-{len(categories)}):").pack(pady=5)
-    position_entry = tk.Entry(delete_window)
-    position_entry.pack(pady=5)
-
-    def confirm_delete():
-        try:
-            position = int(position_entry.get())
-            if position < 1 or position > (len(categories) + 1):
                 raise ValueError
             
             else:
-                deleted_category = categories.pop(position - 1)
-                write_categories(categories)
-                messagebox.showinfo("Success", f"Category '{deleted_category[:-2]}' deleted successfully.")
+                categories.insert(position - 1, f"{new_category}.+")  # Add the new category
+                write_categories(categories)  # Save the new list
+                messagebox.showinfo("Success", "New facilitation Category successfully added!")
+                category_window.destroy()  # Close the window
+                manage_categories()  # Reload the updated category list
 
         except ValueError:
-            messagebox.showerror("Error", f"Invalid position. Enter a number from to {len(categories)}.")
-            delete_window.destroy()
-            delete_category()
+            messagebox.showerror("Error", f"Invalid position. Enter a number between 0 and {len(categories) + 2}.")
+            category_window.destroy()  # Close the window
+            manage_categories()  # Reload the updated category list
             return
 
-        delete_window.destroy()
-
-    tk.Button(delete_window, text="Delete", command=confirm_delete).pack(pady=10)
+    tk.Button(add_frame, text="Add Category", command=add_category, bg="green", fg="white").grid(row=2, column=0, columnspan=2, pady=10)
 
     # Back button
     def go_back():
-        delete_window.destroy()
+        category_window.destroy()
 
-    tk.Button(delete_window, text="Back", command=go_back).pack(pady=10)
+    tk.Button(category_window, text="Back", command=go_back).grid(row=3, column=0, columnspan=3, pady=20)
+
 
 
 def getLocalFile():
@@ -510,12 +453,10 @@ button_frame = tk.Frame(root)
 button_frame.pack(pady=20)
 
 # Buttons
-tk.Button(button_frame, text="View Facilitation Categories", command=view_categories, width=30).pack(pady=5)
-tk.Button(button_frame, text="Add New Facilitation Category", command=add_category, width=30).pack(pady=5)
-tk.Button(button_frame, text="Delete Facilitation Category", command=delete_category, width=30).pack(pady=5)
-tk.Button(button_frame, text="Perform Data Merging", command=main, width=30).pack(pady=5)
-tk.Button(button_frame, text="Upload To Merge File/s", command=getLocalFile, width=30).pack(pady=5)
+tk.Button(button_frame, text="View Facilitation Categories", command=manage_categories, width=30).pack(pady=5)
 tk.Button(button_frame, text="View To Merge File/s", command=viewToMergeFiles, width=30).pack(pady=5)
+tk.Button(button_frame, text="Upload To Merge File/s", command=getLocalFile, width=30).pack(pady=5)
+tk.Button(button_frame, text="Perform Data Merging", command=main, width=30).pack(pady=5)
 tk.Button(button_frame, text="Exit", command=exit_program, width=30).pack(pady=5)
 
 # Run the application
